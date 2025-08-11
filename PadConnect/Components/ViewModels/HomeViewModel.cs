@@ -1,4 +1,5 @@
 using PadConnect.Components.Models;
+using PadConnect.Components.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -14,6 +15,8 @@ public class HomeViewModel : INotifyPropertyChanged
     }
 
     public ObservableCollection<PanelModel> GridPanels { get; } = new();
+
+    private MidiService _midiService = new();
 
     public HomeViewModel()
     {
@@ -34,6 +37,7 @@ public class HomeViewModel : INotifyPropertyChanged
         // For example, log or update state
         Debug.WriteLine($"Button pressed at ({panel.Label})");
         OnPropertyChanged(nameof(GridPanels));
+        _midiService.Clear();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
