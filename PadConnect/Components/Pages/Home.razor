@@ -1,0 +1,30 @@
+﻿@page "/"
+@inject HomeViewModel ViewModel
+
+<div class="app">
+    <div class="header">
+        <button class="status-pill hover-up-effect">
+            <span class="status-dot offline"/>
+            <span class="status-text">Device: Offline</span>
+        </button>
+        <button class="status-pill hover-up-effect">
+            <span class="status-dot offline" />
+            <span class="status-text">WebSocket: Offline</span>
+        </button>
+    </div>
+    <div class="main">
+        <div class="grid" id="grid">
+            @foreach (var panel in ViewModel.GridPanels)
+            {
+                <button class="cell hover-up-effect" @onclick="()=>ViewModel.PanelPressed(panel)">
+                    @panel.Label
+                </button>
+            }
+        </div>
+    </div>
+    <div class="side"></div>
+</div>
+
+@code {
+    
+}
