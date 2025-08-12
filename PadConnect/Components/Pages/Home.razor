@@ -7,11 +7,11 @@
     <div class="header">
         <button class="status-pill hover-up-effect" @onclick="ViewModel.ShowDevicePopup">
             <span class="status-dot @(ViewModel.MidiConnected ? "online" : "offline")" />
-            <span class="status-text">Device: Offline</span>
+            <span class="status-text">Device: @(ViewModel.MidiConnected ? "Online" : "Offline")</span>
         </button>
         <button class="status-pill hover-up-effect" @onclick="ViewModel.ShowWebSocketPopup">
-            <span class="status-dot offline" />
-            <span class="status-text">WebSocket: Offline</span>
+            <span class="status-dot @(ViewModel.WebSocketConnected ? "online" : "offline")" />
+            <span class="status-text">WebSocket: @(ViewModel.WebSocketConnected ? "Online" : "Offline")</span>
         </button>
     </div>
     <div class="main">

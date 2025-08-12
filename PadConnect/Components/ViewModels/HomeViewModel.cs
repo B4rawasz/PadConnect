@@ -22,7 +22,7 @@ public class HomeViewModel : INotifyPropertyChanged
         set { _selectedOutDeviceId = value; OnPropertyChanged(); }
     }
 
-    private string _webSocketUrl = "ws://localhost:8080";
+    private string _webSocketUrl = "ws://localhost:4455";
     public string WebSocketUrl
     {
         get => _webSocketUrl;
@@ -57,6 +57,13 @@ public class HomeViewModel : INotifyPropertyChanged
         set { _midiConnected = value; OnPropertyChanged(); }
     }
 
+    private bool _webSocketConnected = false;
+    public bool WebSocketConnected
+    {
+        get => _webSocketConnected;
+        set { _webSocketConnected = value; OnPropertyChanged(); }
+    }
+
     public bool PopupVisible => CurrentPopupType != PopupType.None;
 
     public ObservableCollection<PanelModel> GridPanels { get; } = new();
@@ -64,21 +71,23 @@ public class HomeViewModel : INotifyPropertyChanged
     public ObservableCollection<DeviceInformation> MidiOutDevices { get; } = new();
 
     private MidiService _midiService = new();
+    private WebSocketService _webSocketService = new();
 
     public HomeViewModel()
     {
-        for (int y = 8; y >= 0; y--)
+        for (byte y = 8; y >= 0 && y < 10; y--)
         {
-            for (int x = 0; x < 9; x++)
+            for (byte x = 0; x < 9; x++)
             {
                 var panel = new PanelModel { X = x, Y = y };
-                panel.PropertyChanged += Panel_PropertyChanged;
+                panel.PropertyChanged += (_, _) => OnPropertyChanged(nameof(GridPanels));
                 GridPanels.Add(panel);
             }
         }
 
         _midiService.Message += OnMidiMessage;
-        _midiService.StatusUpdate += OnMidiStatusUpdate;
+        _midiService.StatusUpdate += (s, e) => MidiConnected = e;
+        _webSocketService.StatusUpdate += (s, e) => WebSocketConnected = e;
         LoadMidiDevices();
     }
 
@@ -99,11 +108,6 @@ public class HomeViewModel : INotifyPropertyChanged
         {
             MidiOutDevices.Add(device);
         }
-    }
-
-    private void Panel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        OnPropertyChanged(nameof(GridPanels));
     }
 
     public void ShowDevicePopup()
@@ -131,29 +135,23 @@ public class HomeViewModel : INotifyPropertyChanged
     public void ApplyWebSocketSettings()
     {
         Debug.WriteLine($"Applying WebSocket settings - URL: {WebSocketUrl}, Password: {WebSocketPassword}, AutoReconnect: {AutoReconnect}");
-        // TODO: Apply WebSocket settings
+        _webSocketService.SetWebsocket(WebSocketUrl, WebSocketPassword, AutoReconnect);
         ClosePopup();
     }
 
     private void OnMidiMessage(object? sender, MidiMessage e)
     {
-        int x = e.Pad % 10;
-        int y = e.Pad / 10;
+        Tuple<byte, byte> position = LaunchpadSysExModel.TranslatePosition(e.Pad);
 
-        var panel = GridPanels.FirstOrDefault(p => p.X == x - 1 && p.Y == y - 1);
+        var panel = GridPanels.FirstOrDefault(p => p.X == position.Item1 && p.Y == position.Item2);
         if(panel != null)
         {
-            Debug.WriteLine($"{x} {y} {e.Active}");
+            Debug.WriteLine($"{position.Item1} {position.Item2} {e.Active}");
             if (e.Active)
             {
                 panel.IsActive = !panel.IsActive;
             }
         }
-    }
-
-    private void OnMidiStatusUpdate(object? sender, bool e)
-    {
-        MidiConnected = e;
     }
 
     public void PanelPressed(PanelModel panel)

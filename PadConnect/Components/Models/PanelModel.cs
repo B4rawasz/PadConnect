@@ -10,8 +10,8 @@ namespace PadConnect.Components.Models
 {
     public class PanelModel : INotifyPropertyChanged
     {
-        public int X { get; set; }
-        public int Y { get; set; }
+        public byte X { get; set; }
+        public byte Y { get; set; }
         private bool _isActive;
         public bool IsActive
         {
