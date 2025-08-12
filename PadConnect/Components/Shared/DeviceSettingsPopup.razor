@@ -1,0 +1,62 @@
+<div class="popup-header">
+    <h3>Select MIDI Devices</h3>
+    <button class="close-button" @onclick="OnCancel">×</button>
+</div>
+
+<div class="popup-body">
+    <div class="device-selection">
+        <label for="midi-in-select">MIDI Input Device:</label>
+        <select id="midi-in-select"
+                class="device-dropdown"
+                @bind:get="SelectedInDeviceId"
+                @bind:set="OnSelectedInDeviceIdChanged">
+            <option value="">-- Select Input Device --</option>
+            @foreach (var device in MidiInDevices)
+            {
+                <option value="@device.Id">@device.Name</option>
+            }
+        </select>
+    </div>
+    
+    <div class="device-selection">
+        <label for="midi-out-select">MIDI Output Device:</label>
+        <select id="midi-out-select"
+                class="device-dropdown"
+                @bind:get="SelectedOutDeviceId"
+                @bind:set="OnSelectedOutDeviceIdChanged">
+            <option value="">-- Select Output Device --</option>
+            @foreach (var device in MidiOutDevices)
+            {
+                <option value="@device.Id">@device.Name</option>
+            }
+        </select>
+    </div>
+</div>
+
+<div class="popup-footer">
+    <button class="apply-button" @onclick="OnApply">Apply</button>
+    <button class="cancel-button" @onclick="OnCancel">Cancel</button>
+</div>
+
+@code {
+    [Parameter] public required string SelectedInDeviceId { get; set; }
+    [Parameter] public EventCallback<string> SelectedInDeviceIdChanged { get; set; }
+    [Parameter] public required string SelectedOutDeviceId { get; set; }
+    [Parameter] public EventCallback<string> SelectedOutDeviceIdChanged { get; set; }
+    [Parameter] public required IEnumerable<Windows.Devices.Enumeration.DeviceInformation> MidiInDevices { get; set; }
+    [Parameter] public required IEnumerable<Windows.Devices.Enumeration.DeviceInformation> MidiOutDevices { get; set; }
+    [Parameter] public EventCallback OnApply { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task OnSelectedInDeviceIdChanged(string value)
+    {
+        SelectedInDeviceId = value;
+        await SelectedInDeviceIdChanged.InvokeAsync(value);
+    }
+
+    private async Task OnSelectedOutDeviceIdChanged(string value)
+    {
+        SelectedOutDeviceId = value;
+        await SelectedOutDeviceIdChanged.InvokeAsync(value);
+    }
+}

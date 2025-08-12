@@ -1,13 +1,15 @@
 ﻿@page "/"
 @inject HomeViewModel ViewModel
+@using PadConnect.Components.Models
+@using PadConnect.Components.Shared
 
 <div class="app">
     <div class="header">
-        <button class="status-pill hover-up-effect">
-            <span class="status-dot offline"/>
+        <button class="status-pill hover-up-effect" @onclick="ViewModel.ShowDevicePopup">
+            <span class="status-dot @(ViewModel.MidiConnected ? "online" : "offline")" />
             <span class="status-text">Device: Offline</span>
         </button>
-        <button class="status-pill hover-up-effect">
+        <button class="status-pill hover-up-effect" @onclick="ViewModel.ShowWebSocketPopup">
             <span class="status-dot offline" />
             <span class="status-text">WebSocket: Offline</span>
         </button>
@@ -16,7 +18,9 @@
         <div class="grid" id="grid">
             @foreach (var panel in ViewModel.GridPanels)
             {
-                <button class="cell hover-up-effect" @onclick="()=>ViewModel.PanelPressed(panel)">
+                <button class="cell hover-up-effect"
+                        @onclick="() => ViewModel.PanelPressed(panel)"
+                        style="@(panel.IsActive ? "background-color: red;" : "")">
                     @panel.Label
                 </button>
             }
@@ -25,6 +29,48 @@
     <div class="side"></div>
 </div>
 
+@if (ViewModel.PopupVisible)
+{
+    <div class="popup-overlay" @onclick="ViewModel.ClosePopup">
+        <div class="popup-content" @onclick:stopPropagation="true">
+            @switch (ViewModel.CurrentPopupType)
+            {
+                case PopupType.DeviceSettings:
+                    <DeviceSettingsPopup 
+                        SelectedInDeviceId="@ViewModel.SelectedInDeviceId"
+                        SelectedInDeviceIdChanged="@((value) => ViewModel.SelectedInDeviceId = value)"
+                        SelectedOutDeviceId="@ViewModel.SelectedOutDeviceId"
+                        SelectedOutDeviceIdChanged="@((value) => ViewModel.SelectedOutDeviceId = value)"
+                        MidiInDevices="@ViewModel.MidiInDevices"
+                        MidiOutDevices="@ViewModel.MidiOutDevices"
+                        OnApply="@ViewModel.ApplyDeviceSettings"
+                        OnCancel="@ViewModel.ClosePopup" />
+                    break;
+                
+                case PopupType.WebSocketSettings:
+                    <WebSocketSettingsPopup 
+                        WebSocketUrl="@ViewModel.WebSocketUrl"
+                        WebSocketUrlChanged="@((value) => ViewModel.WebSocketUrl = value)"
+                        WebSocketPassword="@ViewModel.WebSocketPassword"
+                        WebSocketPasswordChanged="@((value) => ViewModel.WebSocketPassword = value)"
+                        AutoReconnect="@ViewModel.AutoReconnect"
+                        AutoReconnectChanged="@((value) => ViewModel.AutoReconnect = value)"
+                        OnApply="@ViewModel.ApplyWebSocketSettings"
+                        OnCancel="@ViewModel.ClosePopup" />
+                    break;
+            }
+        </div>
+    </div>
+}
+
 @code {
-    
+    protected override void OnInitialized()
+    {
+        ViewModel.PropertyChanged += (_, __) => InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ViewModel.PropertyChanged -= (_, __) => InvokeAsync(StateHasChanged);
+    }
 }

@@ -9,6 +9,7 @@
     --muted: #a0b9c4;
     --danger: #e76f51;
     --glass: rgba(255,255,255,0.05);
+    --glass-strong: rgba(255,255,255,0.15);
     --radius: 12px;
     --gap: 10px;
     --button-size: 48px;
@@ -102,4 +103,177 @@ h1:focus {
     .flex-column, .navbar-brand {
         padding-left: env(safe-area-inset-left);
     }
+}
+
+
+/** POPUP **/
+.popup-overlay{
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 999;
+
+    width: 100vw;
+    height: 100vh;
+
+    background-color: var(--glass-strong);
+    backdrop-filter: blur(5px);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-content{
+    background-color: var(--background);
+
+    border-radius: 12px;
+    padding: 0;
+    min-width: 400px;
+    max-width: 500px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.popup-header h3 {
+    margin: 0;
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.12s ease;
+}
+
+.close-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text);
+}
+
+.popup-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.device-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.device-selection label {
+    color: var(--text);
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.device-dropdown {
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    font-size: 14px;
+    transition: all 0.12s ease;
+}
+
+.device-dropdown:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+}
+
+.device-dropdown option {
+    background-color: var(--background);
+    color: var(--text);
+}
+
+.checkbox-selection {
+    flex-direction: row;
+    align-items: center;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: transparent;
+    cursor: pointer;
+}
+
+.checkbox:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.popup-footer {
+    padding: 16px 24px 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.apply-button,
+.cancel-button {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.apply-button {
+    background-color: var(--primary);
+    color: white;
+}
+
+.apply-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+}
+
+.cancel-button {
+    background-color: transparent;
+    color: var(--muted);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.cancel-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text);
 }

@@ -1,0 +1,71 @@
+<div class="popup-header">
+    <h3>WebSocket Settings</h3>
+    <button class="close-button" @onclick="OnCancel">×</button>
+</div>
+
+<div class="popup-body">
+    <div class="device-selection">
+        <label for="websocket-url">WebSocket URL:</label>
+        <input id="websocket-url"
+            type="text"
+            class="device-dropdown"
+            placeholder="ws://localhost:8080"
+            @bind:get="WebSocketUrl"
+            @bind:set="OnWebSocketUrlChanged" />
+    </div>
+
+    <div class="device-selection">
+        <label for="websocket-password">WebSocket Password:</label>
+        <input id="websocket-password"
+            type="password"
+            class="device-dropdown"
+            placeholder=""
+            @bind:get="WebSocketPassword"
+            @bind:set="OnWebSocketPasswordChanged" />
+    </div>
+    
+    <div class="device-selection checkbox-selection">
+        <label class="checkbox-label">
+            <input type="checkbox"
+                class="checkbox"
+                @bind:get="AutoReconnect"
+                @bind:set="OnAutoReconnectChanged" />
+            <span class="checkmark"></span>
+            Auto-reconnect on disconnect
+        </label>
+    </div>
+</div>
+
+<div class="popup-footer">
+    <button class="apply-button" @onclick="OnApply">Apply</button>
+    <button class="cancel-button" @onclick="OnCancel">Cancel</button>
+</div>
+
+@code {
+    [Parameter] public required string WebSocketUrl { get; set; }
+    [Parameter] public EventCallback<string> WebSocketUrlChanged { get; set; }
+    [Parameter] public required string WebSocketPassword { get; set; }
+    [Parameter] public EventCallback<string> WebSocketPasswordChanged { get; set; }
+    [Parameter] public bool AutoReconnect { get; set; }
+    [Parameter] public EventCallback<bool> AutoReconnectChanged { get; set; }
+    [Parameter] public EventCallback OnApply { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task OnWebSocketUrlChanged(string value)
+    {
+        WebSocketUrl = value;
+        await WebSocketUrlChanged.InvokeAsync(value);
+    }
+
+    private async Task OnWebSocketPasswordChanged(string value)
+    {
+        WebSocketPassword = value;
+        await WebSocketPasswordChanged.InvokeAsync(value);
+    }
+
+    private async Task OnAutoReconnectChanged(bool value)
+    {
+        AutoReconnect = value;
+        await AutoReconnectChanged.InvokeAsync(value);
+    }
+}
