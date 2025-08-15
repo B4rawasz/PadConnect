@@ -8,6 +8,7 @@ using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace PadConnect.Components.Services
@@ -26,7 +27,8 @@ namespace PadConnect.Components.Services
 
         private JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
         {
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            Converters = { new JsonStringEnumConverter() }
         };
 
         public async void SetWebsocket(string address, string password, bool autoReconnect)

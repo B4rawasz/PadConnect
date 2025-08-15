@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PadConnect.Components.Models.OBS_WebSocket.Events;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,7 +14,7 @@ namespace PadConnect.Components.Models.OBS_WebSocket.Messages
 
     internal class MessageEventData
     {
-        public string? eventType { get; set; }
+        public EventType? eventType { get; set; }
         public int? eventIntent { get; set; }
         public object? eventData { get; set; }
     }
