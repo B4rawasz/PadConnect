@@ -29,7 +29,7 @@ public class HomeViewModel : INotifyPropertyChanged
         set { _webSocketUrl = value; OnPropertyChanged(); }
     }
 
-    private string _webSocketPassword = "";
+    private string _webSocketPassword = "123456";
     public string WebSocketPassword
     {
         get => _webSocketPassword;

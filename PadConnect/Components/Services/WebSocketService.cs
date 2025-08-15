@@ -1,4 +1,5 @@
-﻿using PadConnect.Components.Models.OBS_WebSocket.Messages;
+﻿using PadConnect.Components.Models.OBS_WebSocket.Events;
+using PadConnect.Components.Models.OBS_WebSocket.Messages;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +15,7 @@ namespace PadConnect.Components.Services
     internal class WebSocketService
     {
         private string _webSocketUrl = "ws://localhost:4455";
-        private string _webSocketPassword = "";
+        private string _webSocketPassword = "123456";
         private bool _autoReconnect = true;
 
         public event EventHandler<bool>? StatusUpdate;
@@ -86,6 +87,7 @@ namespace PadConnect.Components.Services
                                             {
                                                 rpcVersion = helloMessage.d?.rpcVersion ?? 1,
                                                 authentication = authenticationString,
+                                                eventSubscriptions = EventSubscription.All
                                             }
                                         };
                                         var identifyJson = JsonSerializer.Serialize(identifyMessage, _jsonOptions);

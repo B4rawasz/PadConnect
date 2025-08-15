@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PadConnect.Components.Models.OBS_WebSocket.Events;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -18,6 +19,6 @@ namespace PadConnect.Components.Models.OBS_WebSocket.Messages
     {
         public required int rpcVersion { get; set; } // RPC version
         public string? authentication { get; set; } // Authentication token or method
-        public int? eventSubscriptions { get; set; } // Subscribed events
+        public EventSubscription? eventSubscriptions { get; set; } // Subscribed events
     }
 }
