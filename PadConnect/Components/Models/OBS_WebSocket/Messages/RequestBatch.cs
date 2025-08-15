@@ -8,7 +8,7 @@ namespace PadConnect.Components.Models.OBS_WebSocket.Messages
 {
     internal class RequestBatch : Message
     {
-        public new WebSocketOpCode op { get; set; } = WebSocketOpCode.RequestBatch;
+        public new MessageOpCode op { get; set; } = MessageOpCode.RequestBatch;
         public new required MessageRequestBatchData d { get; set; }
     }
 

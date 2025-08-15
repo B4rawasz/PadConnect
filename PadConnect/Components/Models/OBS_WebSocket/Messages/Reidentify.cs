@@ -8,7 +8,7 @@ namespace PadConnect.Components.Models.OBS_WebSocket.Messages
 {
     internal class Reidentify : Message
     {
-        public new WebSocketOpCode op { get; set; } = WebSocketOpCode.Reidentify;
+        public new MessageOpCode op { get; set; } = MessageOpCode.Reidentify;
         public new required MessageReidentifyData d { get; set; }
     }
 

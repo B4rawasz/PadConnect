@@ -54,7 +54,7 @@ namespace PadConnect.Components.Services
 
                         switch (msg.op)
                         {
-                            case WebSocketOpCode.Hello:
+                            case MessageOpCode.Hello:
                                 var helloMessage = JsonSerializer.Deserialize<Hello>(message);
                                 if (helloMessage != null && helloMessage.d != null)
                                 {
@@ -93,14 +93,14 @@ namespace PadConnect.Components.Services
                                     }
                                 }
                                 break;
-                            case WebSocketOpCode.Identified:
+                            case MessageOpCode.Identified:
                                 var identifiedMessage = JsonSerializer.Deserialize<Identified>(message);
                                 if (identifiedMessage != null && identifiedMessage.d != null)
                                 {
                                     Debug.WriteLine($"Identified message received: {identifiedMessage.d.negotiatedRpcVersion}");
                                 }
                                 break;
-                            case WebSocketOpCode.Event:
+                            case MessageOpCode.Event:
                                 var eventMessage = JsonSerializer.Deserialize<Event>(message);
                                 if (eventMessage != null && eventMessage.d != null)
                                 {

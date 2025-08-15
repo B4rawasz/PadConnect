@@ -10,7 +10,7 @@ namespace PadConnect.Components.Models.OBS_WebSocket.Messages
 {
     internal class Identify : Message
     {
-        public new WebSocketOpCode op { get; set; } = WebSocketOpCode.Identify;
+        public new MessageOpCode op { get; set; } = MessageOpCode.Identify;
         public new required MessageIdentifyData d { get; set; } // Data payload specific to Identify message
     }
 

@@ -8,7 +8,7 @@ namespace PadConnect.Components.Models.OBS_WebSocket.Messages
 {
     internal class Request : Message
     {
-        public new WebSocketOpCode op { get; set; } = WebSocketOpCode.Request;
+        public new MessageOpCode op { get; set; } = MessageOpCode.Request;
         public new required MessageRequestData d { get; set; } // Data payload specific to Request message
     }
 
