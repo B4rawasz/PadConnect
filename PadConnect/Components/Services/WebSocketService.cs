@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -22,6 +23,11 @@ namespace PadConnect.Components.Services
 
         private ClientWebSocket? _ws;
 
+        private JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        };
+
         public async void SetWebsocket(string address, string password, bool autoReconnect)
         {
             _webSocketUrl = address;
@@ -39,7 +45,6 @@ namespace PadConnect.Components.Services
                 await _ws.ConnectAsync(new Uri(address), CancellationToken.None);
                 _ = StartReceivingAsync(message =>
                 {
-                    // Handle the received message (e.g., update UI, log, etc.)
                     Debug.WriteLine($"Received: {message}");
 
                     Message? msg = JsonSerializer.Deserialize<Message>(message);
@@ -47,14 +52,57 @@ namespace PadConnect.Components.Services
                     {
                         Debug.WriteLine($"Message OpCode: {msg.op}");
 
-                        if(msg.op == WebSocketOpCode.Hello)
+                        switch (msg.op)
                         {
-                            var helloMessage = JsonSerializer.Deserialize<MessageHello>(message);
-                            if (helloMessage != null && helloMessage.d != null)
-                            {
-                                Debug.WriteLine($"Hello message received: {helloMessage.d.obsStudioVersion}");
-                                Debug.WriteLine($"Salt: {helloMessage.d.authentication?.salt}");
-                            }
+                            case WebSocketOpCode.Hello:
+                                var helloMessage = JsonSerializer.Deserialize<MessageHello>(message);
+                                if (helloMessage != null && helloMessage.d != null)
+                                {
+                                    Debug.WriteLine($"Hello message received: {helloMessage.d.obsStudioVersion}");
+                                    Debug.WriteLine($"Salt: {helloMessage.d.authentication?.salt}");
+
+                                    if(helloMessage.d.authentication != null)
+                                    {
+                                        var salt = helloMessage.d.authentication.salt ?? "";
+                                        var challenge = helloMessage.d.authentication.challenge ?? "";
+
+                                        var passwordSalt = _webSocketPassword + salt;
+
+                                        using var sha256 = SHA256.Create();
+                                        var passwordSaltBytes = Encoding.UTF8.GetBytes(passwordSalt);
+                                        var hash1 = sha256.ComputeHash(passwordSaltBytes);
+                                        var base64Secret = Convert.ToBase64String(hash1);
+
+                                        var secretChallenge = base64Secret + challenge;
+
+                                        var secretChallengeBytes = Encoding.UTF8.GetBytes(secretChallenge);
+                                        var hash2 = sha256.ComputeHash(secretChallengeBytes);
+                                        var authenticationString = Convert.ToBase64String(hash2);
+
+
+                                        var identifyMessage = new MessageIdentify
+                                        {
+                                            d = new MessageIdentifyData
+                                            {
+                                                rpcVersion = helloMessage.d.rpcVersion,
+                                                authentication = authenticationString,
+                                            }
+                                        };
+                                        var identifyJson = JsonSerializer.Serialize(identifyMessage, _jsonOptions);
+                                        _ws?.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(identifyJson)), WebSocketMessageType.Text, true, CancellationToken.None);
+                                    }
+                                }
+                                break;
+                            case WebSocketOpCode.Identified:
+                                var identifiedMessage = JsonSerializer.Deserialize<MessageIdentified>(message);
+                                if (identifiedMessage != null && identifiedMessage.d != null)
+                                {
+                                    Debug.WriteLine($"Identified message received: {identifiedMessage.d.negotiatedRpcVersion}");
+                                }
+                                break;
+                            default:
+                                Debug.WriteLine($"Unhandled OpCode: {msg.op}");
+                                break;
                         }
                     }
                 });
@@ -83,7 +131,7 @@ namespace PadConnect.Components.Services
                     var result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        Debug.WriteLine("WebSocket closed by server");
+                        Debug.WriteLine($"WebSocket closed by server. CloseStatus: {result.CloseStatus}, Reason: {result.CloseStatusDescription}");
                         await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by server", CancellationToken.None);
                         break;
                     }
