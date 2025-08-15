@@ -1,4 +1,4 @@
-﻿using PadConnect.Components.Models.WebSocket;
+﻿using PadConnect.Components.Models.OBS_WebSocket.Messages;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -55,7 +55,7 @@ namespace PadConnect.Components.Services
                         switch (msg.op)
                         {
                             case WebSocketOpCode.Hello:
-                                var helloMessage = JsonSerializer.Deserialize<MessageHello>(message);
+                                var helloMessage = JsonSerializer.Deserialize<Hello>(message);
                                 if (helloMessage != null && helloMessage.d != null)
                                 {
                                     Debug.WriteLine($"Hello message received: {helloMessage.d.obsStudioVersion}");
@@ -80,11 +80,11 @@ namespace PadConnect.Components.Services
                                         var authenticationString = Convert.ToBase64String(hash2);
 
 
-                                        var identifyMessage = new MessageIdentify
+                                        var identifyMessage = new Identify
                                         {
                                             d = new MessageIdentifyData
                                             {
-                                                rpcVersion = helloMessage.d.rpcVersion,
+                                                rpcVersion = helloMessage.d?.rpcVersion ?? 1,
                                                 authentication = authenticationString,
                                             }
                                         };
@@ -94,10 +94,18 @@ namespace PadConnect.Components.Services
                                 }
                                 break;
                             case WebSocketOpCode.Identified:
-                                var identifiedMessage = JsonSerializer.Deserialize<MessageIdentified>(message);
+                                var identifiedMessage = JsonSerializer.Deserialize<Identified>(message);
                                 if (identifiedMessage != null && identifiedMessage.d != null)
                                 {
                                     Debug.WriteLine($"Identified message received: {identifiedMessage.d.negotiatedRpcVersion}");
+                                }
+                                break;
+                            case WebSocketOpCode.Event:
+                                var eventMessage = JsonSerializer.Deserialize<Event>(message);
+                                if (eventMessage != null && eventMessage.d != null)
+                                {
+                                    Debug.WriteLine($"Event message received: {eventMessage.d.eventType}");
+                                    // Handle the event as needed
                                 }
                                 break;
                             default:

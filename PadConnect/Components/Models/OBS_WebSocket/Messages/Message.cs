@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PadConnect.Components.Models.WebSocket
+namespace PadConnect.Components.Models.OBS_WebSocket.Messages
 {
     public enum WebSocketOpCode
     {

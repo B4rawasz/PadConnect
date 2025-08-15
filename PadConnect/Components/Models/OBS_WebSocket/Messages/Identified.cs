@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PadConnect.Components.Models.WebSocket
+namespace PadConnect.Components.Models.OBS_WebSocket.Messages
 {
-    internal class MessageIdentified : Message
+    internal class Identified : Message
     {
         public new MessageIdentifiedData? d { get; set; } // Data payload specific to Identified message
     }

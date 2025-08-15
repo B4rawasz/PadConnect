@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PadConnect.Components.Models.WebSocket
+namespace PadConnect.Components.Models.OBS_WebSocket.Messages
 {
-    internal class MessageHello : Message
+    internal class Hello : Message
     {
         public new MessageHelloData? d { get; set; } // Data payload specific to Hello message
     }

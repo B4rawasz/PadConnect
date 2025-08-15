@@ -6,17 +6,17 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
 
-namespace PadConnect.Components.Models.WebSocket
+namespace PadConnect.Components.Models.OBS_WebSocket.Messages
 {
-    internal class MessageIdentify
+    internal class Identify : Message
     {
         public new WebSocketOpCode op { get; set; } = WebSocketOpCode.Identify;
-        public new MessageIdentifyData? d { get; set; } // Data payload specific to Identify message
+        public new required MessageIdentifyData d { get; set; } // Data payload specific to Identify message
     }
 
     internal class MessageIdentifyData
     {
-        public int? rpcVersion { get; set; } // RPC version
+        public required int rpcVersion { get; set; } // RPC version
         public string? authentication { get; set; } // Authentication token or method
         public int? eventSubscriptions { get; set; } // Subscribed events
     }
