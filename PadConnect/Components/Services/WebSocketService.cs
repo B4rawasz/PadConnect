@@ -1,4 +1,6 @@
-﻿using PadConnect.Components.Models.OBS_WebSocket.Events;
+﻿using Microsoft.UI.Xaml.Controls;
+using PadConnect.Components.Models.OBS_WebSocket.Events;
+using PadConnect.Components.Models.OBS_WebSocket.Events.Scenes;
 using PadConnect.Components.Models.OBS_WebSocket.Messages;
 using System;
 using System.Collections.Generic;
@@ -27,7 +29,12 @@ namespace PadConnect.Components.Services
 
         private JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
         {
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        };
+
+        private JsonSerializerOptions _jsonEventOptions = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             Converters = { new JsonStringEnumConverter() }
         };
 
@@ -93,6 +100,7 @@ namespace PadConnect.Components.Services
                                             }
                                         };
                                         var identifyJson = JsonSerializer.Serialize(identifyMessage, _jsonOptions);
+                                        Debug.WriteLine(identifyJson);
                                         _ws?.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(identifyJson)), WebSocketMessageType.Text, true, CancellationToken.None);
                                     }
                                 }
@@ -110,6 +118,12 @@ namespace PadConnect.Components.Services
                                 {
                                     Debug.WriteLine($"Event message received: {eventMessage.d.eventType}");
                                     // Handle the event as needed
+                                    if (eventMessage.d.eventType == EventType.SceneListChanged)
+                                    {
+                                        var sceneListChanged = eventMessage.d.eventData?.Deserialize<SceneListChanged>();
+                                        // Use sceneListChanged here
+                                        Debug.WriteLine($"SceneListChanged: {sceneListChanged?.scenes?.Count} scenes");
+                                    }
                                 }
                                 break;
                             default:

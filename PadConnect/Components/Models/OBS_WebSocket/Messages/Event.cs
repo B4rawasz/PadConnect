@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace PadConnect.Components.Models.OBS_WebSocket.Messages
@@ -16,6 +17,6 @@ namespace PadConnect.Components.Models.OBS_WebSocket.Messages
     {
         public EventType? eventType { get; set; }
         public int? eventIntent { get; set; }
-        public object? eventData { get; set; }
+        public JsonElement? eventData { get; set; }
     }
 }
