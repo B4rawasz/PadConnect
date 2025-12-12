@@ -1,0 +1,375 @@
+﻿@using PadConnect.Components.Models
+@using Microsoft.Maui.Graphics
+
+<div class="popup-header">
+    <h3>Pad Settings - (@panel.X, @panel.Y)</h3>
+    <button class="close-button" @onclick="OnCancel">×</button>
+</div>
+
+<div class="popup-body">
+    <!-- Action Selection -->
+    <div class="setting-section">
+        <label for="action-select">Action:</label>
+        <select id="action-select" class="setting-dropdown" @bind="SelectedAction">
+            <option value="@PadAction.None">-- Select Action --</option>
+            @foreach (var action in GetAvailableActions())
+            {
+                <option value="@action">@GetActionDisplayName(action)</option>
+            }
+        </select>
+    </div>
+
+    <!-- Scene Selection (only if SwitchScene is selected) -->
+    @if (SelectedAction == PadAction.SwitchScene)
+    {
+        <div class="setting-section">
+            <label for="scene-select">Scene:</label>
+            <select id="scene-select" class="setting-dropdown" @bind="SelectedSceneUUID">
+                <option value="">-- Select Scene --</option>
+                @foreach (var scene in AvailableScenes)
+                {
+                    <option value="@scene.Value">@scene.Key</option>
+                }
+            </select>
+        </div>
+    }
+
+    <!-- Slider Options (only for x=0 or y=0, except corner) -->
+    @if (ShowSliderOptions())
+    {
+        <div class="setting-section">
+            <label for="slider-value">Slider Value:</label>
+            <input id="slider-value" 
+                   type="range" 
+                   min="0" 
+                   max="100" 
+                   step="1" 
+                   class="slider" 
+                   @bind="SliderValue" />
+            <span class="slider-value">@SliderValue%</span>
+        </div>
+    }
+
+    <!-- Slider Orientation (only for corner position 0,0) -->
+    @if (panel.X == 0 && panel.Y == 0)
+    {
+        <div class="setting-section">
+            <label>Slider Orientation:</label>
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input type="radio" name="orientation" value="@SliderOrientation.Vertical" @onchange="() => SelectedSliderOrientation = SliderOrientation.Vertical" checked="@(SelectedSliderOrientation == SliderOrientation.Vertical)" />
+                    Vertical
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="orientation" value="@SliderOrientation.Horizontal" @onchange="() => SelectedSliderOrientation = SliderOrientation.Horizontal" checked="@(SelectedSliderOrientation == SliderOrientation.Horizontal)" />
+                    Horizontal
+                </label>
+            </div>
+        </div>
+    }
+
+    <!-- Light Mode Selection -->
+    <div class="setting-section">
+        <label for="light-mode-select">Light Mode:</label>
+        <select id="light-mode-select" class="setting-dropdown" @bind="SelectedLightMode">
+            @foreach (var mode in Enum.GetValues<LightMode>())
+            {
+                <option value="@mode">@mode</option>
+            }
+        </select>
+    </div>
+
+    <!-- Color Selection -->
+    @if (SelectedLightMode != LightMode.RGB)
+    {
+        <div class="setting-section">
+            <label>Predefined Colors:</label>
+            <div class="color-palette">
+                @foreach (var color in PredefinedColors)
+                {
+                    <button class="color-button @(SelectedColor.Equals(color.Value) ? "selected" : "")"
+                            style="background-color: @color.Value.ToHex()"
+                            @onclick="() => SelectedColor = color.Value"
+                            title="@color.Key">
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- RGB Color Selection (only when RGB mode is selected) -->
+    @if (SelectedLightMode == LightMode.RGB)
+    {
+        <div class="setting-section">
+            <label>RGB Color:</label>
+            <div class="rgb-controls">
+                <div class="rgb-slider">
+                    <label>Red: @RgbRed</label>
+                    <input type="range" min="0" max="255" @bind="RgbRed" class="slider rgb-red" />
+                </div>
+                <div class="rgb-slider">
+                    <label>Green: @RgbGreen</label>
+                    <input type="range" min="0" max="255" @bind="RgbGreen" class="slider rgb-green" />
+                </div>
+                <div class="rgb-slider">
+                    <label>Blue: @RgbBlue</label>
+                    <input type="range" min="0" max="255" @bind="RgbBlue" class="slider rgb-blue" />
+                </div>
+                <div class="rgb-preview" style="background-color: rgb(@RgbRed, @RgbGreen, @RgbBlue)"></div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="popup-footer">
+    <button class="apply-button" @onclick="OnApply1">Apply</button>
+    <button class="cancel-button" @onclick="OnCancel">Cancel</button>
+</div>
+
+@code {
+    [Parameter] public required PanelModel panel { get; set; }
+    [Parameter] public EventCallback OnApply { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public Dictionary<string, string> AvailableScenes { get; set; } = new();
+
+    private PadAction SelectedAction { get; set; } = PadAction.None;
+    private string SelectedSceneUUID { get; set; } = "";
+    private LightMode SelectedLightMode { get; set; } = LightMode.Static;
+    private Color SelectedColor { get; set; } = Colors.White;
+    private byte RgbRed { get; set; } = 255;
+    private byte RgbGreen { get; set; } = 255;
+    private byte RgbBlue { get; set; } = 255;
+    private SliderOrientation SelectedSliderOrientation { get; set; } = SliderOrientation.Vertical;
+    private float SliderValue { get; set; } = 50.0f;
+
+    private readonly Dictionary<string, Color> PredefinedColors = new()
+    {
+        { "Red", Colors.Red },
+        { "Green", Colors.Green },
+        { "Blue", Colors.Blue },
+        { "Yellow", Colors.Yellow },
+        { "Orange", Colors.Orange },
+        { "Purple", Colors.Purple },
+        { "Pink", Colors.Pink },
+        { "Cyan", Colors.Cyan },
+        { "White", Colors.White },
+        { "Gray", Colors.Gray },
+        { "Black", Colors.Black }
+    };
+
+    protected override void OnInitialized()
+    {
+        // Load current settings from panel
+        SelectedAction = panel.Settings.Action;
+        SelectedSceneUUID = panel.Settings.SceneUUID ?? "";
+        SelectedLightMode = panel.Settings.LightMode;
+        SelectedColor = panel.Settings.LightColor;
+        RgbRed = panel.Settings.RgbRed;
+        RgbGreen = panel.Settings.RgbGreen;
+        RgbBlue = panel.Settings.RgbBlue;
+        SelectedSliderOrientation = panel.Settings.SliderOrientation;
+        SliderValue = panel.Settings.SliderValue;
+    }
+
+    private List<PadAction> GetAvailableActions()
+    {
+        var actions = new List<PadAction>
+        {
+            PadAction.None,
+            PadAction.MuteMicrophone,
+            PadAction.UnmuteMicrophone,
+            PadAction.ToggleMicrophone,
+            PadAction.SwitchScene,
+            PadAction.StartStreaming,
+            PadAction.StopStreaming,
+            PadAction.StartRecording,
+            PadAction.StopRecording
+        };
+
+        // Add slider actions only if pad is on edge (x=0 or y=0) but not corner (0,0)
+        if ((panel.X == 0 || panel.Y == 0) && !(panel.X == 0 && panel.Y == 0))
+        {
+            actions.AddRange(new[]
+            {
+                PadAction.VolumeControl,
+                PadAction.MicrophoneGainControl,
+                PadAction.DesktopAudioControl
+            });
+        }
+
+        // Add slider orientation option only for corner position
+        if (panel.X == 0 && panel.Y == 0)
+        {
+            actions.Add(PadAction.SliderOrientation);
+        }
+
+        return actions;
+    }
+
+    private string GetActionDisplayName(PadAction action)
+    {
+        return action switch
+        {
+            PadAction.None => "None",
+            PadAction.MuteMicrophone => "Mute Microphone",
+            PadAction.UnmuteMicrophone => "Unmute Microphone",
+            PadAction.ToggleMicrophone => "Toggle Microphone",
+            PadAction.SwitchScene => "Switch Scene",
+            PadAction.StartStreaming => "Start Streaming",
+            PadAction.StopStreaming => "Stop Streaming",
+            PadAction.StartRecording => "Start Recording",
+            PadAction.StopRecording => "Stop Recording",
+            PadAction.VolumeControl => "Volume Control",
+            PadAction.MicrophoneGainControl => "Microphone Gain Control",
+            PadAction.DesktopAudioControl => "Desktop Audio Control",
+            PadAction.SliderOrientation => "Slider Orientation",
+            _ => action.ToString()
+        };
+    }
+
+    private bool ShowSliderOptions()
+    {
+        return SelectedAction == PadAction.VolumeControl ||
+               SelectedAction == PadAction.MicrophoneGainControl ||
+               SelectedAction == PadAction.DesktopAudioControl;
+    }
+
+    private async Task OnApply1()
+    {
+        // Save settings to panel
+        panel.Settings.Action = SelectedAction;
+        panel.Settings.SceneUUID = SelectedSceneUUID;
+        panel.Settings.LightMode = SelectedLightMode;
+        
+        if (SelectedLightMode == LightMode.RGB)
+        {
+            panel.Settings.RgbRed = RgbRed;
+            panel.Settings.RgbGreen = RgbGreen;
+            panel.Settings.RgbBlue = RgbBlue;
+            panel.Settings.LightColor = Color.FromRgb(RgbRed, RgbGreen, RgbBlue);
+        }
+        else
+        {
+            panel.Settings.LightColor = SelectedColor;
+        }
+        
+        panel.Settings.SliderOrientation = SelectedSliderOrientation;
+        panel.Settings.SliderValue = SliderValue;
+
+        await OnApply.InvokeAsync();
+    }
+}
+
+<style>
+    .setting-section {
+        margin-bottom: 20px;
+    }
+
+    .setting-section label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    .setting-dropdown {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .slider {
+        width: 100%;
+        margin: 10px 0;
+    }
+
+    .slider-value {
+        display: inline-block;
+        margin-left: 10px;
+        font-weight: bold;
+    }
+
+    .radio-group {
+        display: flex;
+        gap: 15px;
+        margin-top: 5px;
+    }
+
+    .radio-option {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: normal;
+    }
+
+    .color-palette {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .color-button {
+        width: 40px;
+        height: 40px;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .color-button:hover {
+        transform: scale(1.1);
+        border-color: #666;
+    }
+
+    .color-button.selected {
+        border-color: #007acc;
+        border-width: 3px;
+        box-shadow: 0 0 8px rgba(0, 122, 204, 0.5);
+    }
+
+    .rgb-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .rgb-slider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .rgb-slider label {
+        min-width: 80px;
+        margin-bottom: 0;
+    }
+
+    .rgb-slider .slider {
+        flex: 1;
+        margin: 0;
+    }
+
+    .rgb-red {
+        accent-color: #ff0000;
+    }
+
+    .rgb-green {
+        accent-color: #00ff00;
+    }
+
+    .rgb-blue {
+        accent-color: #0000ff;
+    }
+
+    .rgb-preview {
+        width: 60px;
+        height: 60px;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        align-self: center;
+    }
+</style>
