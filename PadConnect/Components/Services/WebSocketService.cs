@@ -1,21 +1,13 @@
-﻿using Microsoft.UI.Xaml.Controls;
-using PadConnect.Components.Models.OBS_WebSocket.Events;
-using PadConnect.Components.Models.OBS_WebSocket.Events.Scenes;
-using PadConnect.Components.Models.OBS_WebSocket.Messages;
-using System;
-using System.Collections.Generic;
+﻿using PadConnect.Components.Models.OBS_WebSocket.Messages;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.WebSockets;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace PadConnect.Components.Services
 {
-    internal class WebSocketService
+    internal partial class WebSocketService
     {
         private string _webSocketUrl = "ws://localhost:4455";
         private string _webSocketPassword = "123456";
@@ -44,104 +36,109 @@ namespace PadConnect.Components.Services
             _webSocketPassword = password;
             _autoReconnect = autoReconnect;
 
-            if (_ws != null && _ws.State == WebSocketState.Open)
-            {
-                await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disconnecting", CancellationToken.None);
-            }
+            await CloseExistingConnection();
 
             try
             {
-                _ws = new ClientWebSocket();
-                await _ws.ConnectAsync(new Uri(address), CancellationToken.None);
-                _ = StartReceivingAsync(message =>
-                {
-                    Debug.WriteLine($"Received: {message}");
-
-                    Message? msg = JsonSerializer.Deserialize<Message>(message);
-                    if (msg != null)
-                    {
-                        Debug.WriteLine($"Message OpCode: {msg.op}");
-
-                        switch (msg.op)
-                        {
-                            case MessageOpCode.Hello:
-                                var helloMessage = JsonSerializer.Deserialize<Hello>(message);
-                                if (helloMessage != null && helloMessage.d != null)
-                                {
-                                    Debug.WriteLine($"Hello message received: {helloMessage.d.obsStudioVersion}");
-                                    Debug.WriteLine($"Salt: {helloMessage.d.authentication?.salt}");
-
-                                    if(helloMessage.d.authentication != null)
-                                    {
-                                        var salt = helloMessage.d.authentication.salt ?? "";
-                                        var challenge = helloMessage.d.authentication.challenge ?? "";
-
-                                        var passwordSalt = _webSocketPassword + salt;
-
-                                        using var sha256 = SHA256.Create();
-                                        var passwordSaltBytes = Encoding.UTF8.GetBytes(passwordSalt);
-                                        var hash1 = sha256.ComputeHash(passwordSaltBytes);
-                                        var base64Secret = Convert.ToBase64String(hash1);
-
-                                        var secretChallenge = base64Secret + challenge;
-
-                                        var secretChallengeBytes = Encoding.UTF8.GetBytes(secretChallenge);
-                                        var hash2 = sha256.ComputeHash(secretChallengeBytes);
-                                        var authenticationString = Convert.ToBase64String(hash2);
-
-
-                                        var identifyMessage = new Identify
-                                        {
-                                            d = new MessageIdentifyData
-                                            {
-                                                rpcVersion = helloMessage.d?.rpcVersion ?? 1,
-                                                authentication = authenticationString,
-                                                eventSubscriptions = EventSubscription.All
-                                            }
-                                        };
-                                        var identifyJson = JsonSerializer.Serialize(identifyMessage, _jsonOptions);
-                                        Debug.WriteLine(identifyJson);
-                                        _ws?.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(identifyJson)), WebSocketMessageType.Text, true, CancellationToken.None);
-                                    }
-                                }
-                                break;
-                            case MessageOpCode.Identified:
-                                var identifiedMessage = JsonSerializer.Deserialize<Identified>(message);
-                                if (identifiedMessage != null && identifiedMessage.d != null)
-                                {
-                                    Debug.WriteLine($"Identified message received: {identifiedMessage.d.negotiatedRpcVersion}");
-                                }
-                                break;
-                            case MessageOpCode.Event:
-                                var eventMessage = JsonSerializer.Deserialize<Event>(message);
-                                if (eventMessage != null && eventMessage.d != null)
-                                {
-                                    Debug.WriteLine($"Event message received: {eventMessage.d.eventType}");
-                                    // Handle the event as needed
-                                    if (eventMessage.d.eventType == EventType.SceneListChanged)
-                                    {
-                                        var sceneListChanged = eventMessage.d.eventData?.Deserialize<SceneListChanged>();
-                                        // Use sceneListChanged here
-                                        Debug.WriteLine($"SceneListChanged: {sceneListChanged?.scenes?.Count} scenes");
-                                    }
-                                }
-                                break;
-                            default:
-                                Debug.WriteLine($"Unhandled OpCode: {msg.op}");
-                                break;
-                        }
-                    }
-                });
-                _connectionStatus = true;
-                StatusUpdate?.Invoke(this, _connectionStatus);
+                await ConnectAndStartReceiving(address);
+                UpdateConnectionStatus(true);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"WebSocket connection error: {ex.Message}");
-                _ws = null;
-                _connectionStatus = false;
-                StatusUpdate?.Invoke(this, _connectionStatus);
+                CleanupConnection();
+                UpdateConnectionStatus(false);
             }
+        }
+
+        private async Task CloseExistingConnection()
+        {
+            if (_ws != null && _ws.State == WebSocketState.Open)
+            {
+                await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disconnecting", CancellationToken.None);
+            }
+        }
+
+        private async Task ConnectAndStartReceiving(string address)
+        {
+            _ws = new ClientWebSocket();
+            await _ws.ConnectAsync(new Uri(address), CancellationToken.None);
+            _ = StartReceivingAsync(HandleWebSocketMessage);
+        }
+
+        private void HandleWebSocketMessage(string message)
+        {
+            Debug.WriteLine($"---\nReceived:\n{message}");
+
+            var msg = JsonSerializer.Deserialize<Message>(message);
+            if (msg == null) return;
+
+            Debug.WriteLine($"Message OpCode: {msg.op}");
+
+            switch (msg.op)
+            {
+                case MessageOpCode.Hello:
+                    HandleHelloMessage(message);
+                    break;
+                case MessageOpCode.Identified:
+                    HandleIdentifiedMessage(message);
+                    break;
+                case MessageOpCode.Event:
+                    HandleEventMessage(message);
+                    break;
+                default:
+                    Debug.WriteLine($"Unhandled OpCode: {msg.op}");
+                    break;
+            }
+        }
+
+        private void HandleHelloMessage(string message)
+        {
+            var helloMessage = JsonSerializer.Deserialize<Hello>(message);
+            if (helloMessage?.d == null) return;
+
+            Debug.WriteLine($"Hello message received: {helloMessage.d.obsStudioVersion}");
+
+            var identifyJson = JsonSerializer.Serialize(Auth(helloMessage), _jsonOptions);
+            Debug.WriteLine(identifyJson);
+
+            var bytes = Encoding.UTF8.GetBytes(identifyJson);
+            _ws?.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+
+        private void HandleIdentifiedMessage(string message)
+        {
+            var identifiedMessage = JsonSerializer.Deserialize<Identified>(message);
+            if (identifiedMessage?.d == null) return;
+
+            Debug.WriteLine($"Identified message received: {identifiedMessage.d.negotiatedRpcVersion}");
+        }
+
+        private void HandleEventMessage(string message)
+        {
+            var eventMessage = JsonSerializer.Deserialize<Event>(message);
+            if (eventMessage?.d?.eventType == null) return;
+
+            if (EventHandlers.TryGetValue(eventMessage.d.eventType.Value, out var handler))
+            {
+                Debug.WriteLine($"Handling EventType: {eventMessage.d.eventType}");
+                handler(eventMessage.d.eventData);
+            }
+            else
+            {
+                Debug.WriteLine($"Unhandled EventType: {eventMessage.d.eventType}");
+            }
+        }
+
+        private void UpdateConnectionStatus(bool status)
+        {
+            _connectionStatus = status;
+            StatusUpdate?.Invoke(this, _connectionStatus);
+        }
+
+        private void CleanupConnection()
+        {
+            _ws = null;
         }
 
         private async Task StartReceivingAsync(Action<string> onMessageReceived)
@@ -178,7 +175,7 @@ namespace PadConnect.Components.Services
             if (_autoReconnect)
             {
                 Debug.WriteLine("Attempting to reconnect...");
-                await Task.Delay(2000); // Wait before trying to reconnect
+                await Task.Delay(1000);
                 SetWebsocket(_webSocketUrl, _webSocketPassword, _autoReconnect);
             }
         }

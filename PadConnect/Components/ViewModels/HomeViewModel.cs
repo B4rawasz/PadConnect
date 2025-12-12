@@ -1,10 +1,12 @@
 using PadConnect.Components.Models;
+using PadConnect.Components.Models.OBS_WebSocket.Events.Scenes;
 using PadConnect.Components.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Windows.Devices.Enumeration;
+using static Microsoft.IO.RecyclableMemoryStreamManager;
 
 public class HomeViewModel : INotifyPropertyChanged
 {
@@ -64,11 +66,28 @@ public class HomeViewModel : INotifyPropertyChanged
         set { _webSocketConnected = value; OnPropertyChanged(); }
     }
 
+    private PanelModel? _selectedPanel;
+    public PanelModel? SelectedPanel
+    {
+        get => _selectedPanel;
+        set { _selectedPanel = value; OnPropertyChanged(); }
+    }
+
     public bool PopupVisible => CurrentPopupType != PopupType.None;
 
     public ObservableCollection<PanelModel> GridPanels { get; } = new();
     public ObservableCollection<DeviceInformation> MidiInDevices { get; } = new();
     public ObservableCollection<DeviceInformation> MidiOutDevices { get; } = new();
+    
+    // Available scenes for scene switching
+    public Dictionary<string, string> AvailableScenes { get; } = new()
+    {
+        { "Scene 1", "scene-uuid-1" },
+        { "Scene 2", "scene-uuid-2" },
+        { "Scene 3", "scene-uuid-3" },
+        { "Gaming Scene", "scene-uuid-gaming" },
+        { "Just Chatting", "scene-uuid-chatting" }
+    };
 
     private MidiService _midiService = new();
     private WebSocketService _webSocketService = new();
@@ -88,7 +107,14 @@ public class HomeViewModel : INotifyPropertyChanged
         _midiService.Message += OnMidiMessage;
         _midiService.StatusUpdate += (s, e) => MidiConnected = e;
         _webSocketService.StatusUpdate += (s, e) => WebSocketConnected = e;
+        _webSocketService.CurrentProgramSceneChanged += HandleCurrentProgramSceneChanged;
         LoadMidiDevices();
+    }
+
+    private void HandleCurrentProgramSceneChanged(object? sender, CurrentProgramSceneChanged e)
+    {
+        Debug.WriteLine($"Current program scene changed to: {e.sceneName}");
+        _midiService.SetPanel(1, 1, 19);
     }
 
     private async void LoadMidiDevices()
@@ -120,9 +146,16 @@ public class HomeViewModel : INotifyPropertyChanged
         CurrentPopupType = PopupType.WebSocketSettings;
     }
 
+    public void ShowPadSettingsPopup(PanelModel panel)
+    {
+        SelectedPanel = panel;
+        CurrentPopupType = PopupType.PadSettings;
+    }
+
     public void ClosePopup()
     {
         CurrentPopupType = PopupType.None;
+        SelectedPanel = null;
     }
 
     public void ApplyDeviceSettings()
@@ -136,6 +169,22 @@ public class HomeViewModel : INotifyPropertyChanged
     {
         Debug.WriteLine($"Applying WebSocket settings - URL: {WebSocketUrl}, Password: {WebSocketPassword}, AutoReconnect: {AutoReconnect}");
         _webSocketService.SetWebsocket(WebSocketUrl, WebSocketPassword, AutoReconnect);
+        ClosePopup();
+    }
+
+    public void ApplyPadSettings()
+    {
+        if (SelectedPanel != null)
+        {
+            Debug.WriteLine($"Applying pad settings for panel ({SelectedPanel.X}, {SelectedPanel.Y})");
+            Debug.WriteLine($"Action: {SelectedPanel.Settings.Action}");
+            Debug.WriteLine($"Light Mode: {SelectedPanel.Settings.LightMode}");
+            Debug.WriteLine($"Light Color: {SelectedPanel.Settings.LightColor}");
+            
+            // Here you would implement the actual pad configuration logic
+            // For example, set the light color on the physical device
+            // _midiService.SetPadLight(SelectedPanel.X, SelectedPanel.Y, SelectedPanel.Settings);
+        }
         ClosePopup();
     }
 
@@ -158,6 +207,11 @@ public class HomeViewModel : INotifyPropertyChanged
     {
         Debug.WriteLine($"Button pressed at ({panel.Label})");
         _midiService.Clear();
+    }
+
+    public void AssignActionToPanel(PanelModel p, int v)
+    {
+        Debug.WriteLine($"{p.X} {p.Y} {v}");
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
