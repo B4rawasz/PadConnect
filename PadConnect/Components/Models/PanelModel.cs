@@ -27,10 +27,13 @@ namespace PadConnect.Components.Models
         }
         public string Label => $"{X}, {Y}";
         public Color? BackgroundColor { get; set; }
+        public string? SubscribedUUID { get; set; }
+        public ControlEvents? SubscribedEvent { get; set; }
+        
+        public PadSettings Settings { get; set; } = new PadSettings();
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
     }
 }

@@ -19,14 +19,13 @@
             @foreach (var panel in ViewModel.GridPanels)
             {
                 <button class="cell hover-up-effect"
-                        @onclick="() => ViewModel.PanelPressed(panel)"
-                        style="@(panel.IsActive ? "background-color: red;" : "")">
+                        @onclick="() => {ViewModel.PanelPressed(panel); ViewModel.ShowPadSettingsPopup(panel);}"
+                        style="@(panel.IsActive ? "background-color: red;":"")">
                     @panel.Label
                 </button>
             }
         </div>
     </div>
-    <div class="side"></div>
 </div>
 
 @if (ViewModel.PopupVisible)
@@ -57,6 +56,17 @@
                         AutoReconnectChanged="@((value) => ViewModel.AutoReconnect = value)"
                         OnApply="@ViewModel.ApplyWebSocketSettings"
                         OnCancel="@ViewModel.ClosePopup" />
+                    break;
+
+                case PopupType.PadSettings:
+                    @if (ViewModel.SelectedPanel != null)
+                    {
+                        <PadSettingsPopup
+                            panel="@ViewModel.SelectedPanel"
+                            AvailableScenes="@ViewModel.AvailableScenes"
+                            OnApply="@ViewModel.ApplyPadSettings"
+                            OnCancel="@ViewModel.ClosePopup" />
+                    }
                     break;
             }
         </div>

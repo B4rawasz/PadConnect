@@ -4,6 +4,7 @@ namespace PadConnect.Components.Models
     {
         None,
         DeviceSettings,
-        WebSocketSettings
+        WebSocketSettings,
+        PadSettings
     }
 }

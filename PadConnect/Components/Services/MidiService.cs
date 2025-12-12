@@ -143,5 +143,12 @@ namespace PadConnect.Components.Services
         {
             _midiOutPort?.SendBuffer(LaunchpadSysExModel.SetColor(0, 0, 8, 8, LaunchpadSysExModel.LightMode.STATIC, 0));
         }
+
+        public void SetPanel(byte x, byte y, byte color)
+        {
+            if (x > 8 || y > 8) return;
+
+            _midiOutPort?.SendBuffer(LaunchpadSysExModel.SetColor(x, y, LaunchpadSysExModel.LightMode.STATIC, color));
+        }
     }
 }
